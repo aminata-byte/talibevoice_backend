@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('besoins', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('daara_id')->constrained('daaras')->onDelete('cascade');
+            $table->foreignId('agent_id')->constrained('users')->onDelete('set null')->nullable();
+            $table->string('type');
+            $table->text('description');
+            $table->enum('priorite', ['urgent', 'normal', 'faible'])->default('normal');
+            $table->enum('statut', ['en_attente', 'en_cours', 'resolu'])->default('en_attente');
+            $table->date('date_signalement');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('besoins');

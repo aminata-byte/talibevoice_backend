@@ -6,20 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('redistributions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('don_id')->constrained('dons')->onDelete('cascade');
+            $table->foreignId('daara_id')->constrained('daaras')->onDelete('cascade');
+            $table->double('montant');
+            $table->date('date_redistribution');
+            $table->text('motif')->nullable();
+            $table->enum('statut', ['planifie', 'valide', 'effectue'])->default('planifie');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('redistributions');
