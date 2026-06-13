@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('besoins', function (Blueprint $table) {
             $table->id();
             $table->foreignId('daara_id')->constrained('daaras')->onDelete('cascade');
-            $table->foreignId('agent_id')->constrained('users')->onDelete('set null')->nullable();
+            $table->unsignedBigInteger('agent_id')->nullable();
+            $table->foreign('agent_id')->references('id')->on('users')->onDelete('set null');
             $table->string('type');
             $table->text('description');
             $table->enum('priorite', ['urgent', 'normal', 'faible'])->default('normal');
