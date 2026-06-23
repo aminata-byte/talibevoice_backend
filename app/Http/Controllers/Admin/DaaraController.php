@@ -12,41 +12,27 @@ class DaaraController extends Controller
     {
         $query = Daara::withCount('talibes')->with('besoins');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('nom', 'like', '%' . $request->search . '%');
         }
 
-        if ($request->has('statut')) {
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 
-        return response()->json($query->get());
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nom' => 'required|string',
-            'adresse' => 'required|string',
-            'nom_responsable' => 'required|string',
-        ]);
-
-        $daara = Daara::create($request->all());
-        return response()->json($daara, 201);
+        return response()->json($query->orderBy('nom')->get()->map(function ($d) {
+            $d->nombre_talibes = $d->talibes_count;
+            return $d;
+        }));
     }
 
     public function show($id)
     {
-        $daara = Daara::with(['talibes', 'besoins', 'rapports', 'localisation'])
+        $daara = Daara::with(['talibes', 'besoins', 'rapports'])
             ->withCount('talibes')
             ->findOrFail($id);
-        return response()->json($daara);
-    }
 
-    public function update(Request $request, $id)
-    {
-        $daara = Daara::findOrFail($id);
-        $daara->update($request->all());
+        $daara->nombre_talibes = $daara->talibes_count;
         return response()->json($daara);
     }
 

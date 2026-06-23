@@ -12,32 +12,40 @@ class TalibeController extends Controller
     {
         $query = Talibe::with(['daara', 'agent']);
 
-        if ($request->has('search')) {
-            $query->where('nom', 'like', '%' . $request->search . '%')
-                ->orWhere('prenom', 'like', '%' . $request->search . '%');
+        // Fix : grouper le search pour ne pas casser les autres filtres
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%");
+            });
         }
 
-        if ($request->has('daara_id')) {
+        if ($request->filled('daara_id')) {
             $query->where('daara_id', $request->daara_id);
         }
 
-        if ($request->has('est_majeur')) {
-            $query->where('est_majeur', $request->est_majeur);
+        // Filtre par région via la relation daara
+        if ($request->filled('region')) {
+            $query->whereHas('daara', function ($q) use ($request) {
+                $q->where('region', $request->region);
+            });
         }
 
-        return response()->json($query->get());
+        if ($request->filled('est_majeur')) {
+            $query->where('est_majeur', filter_var($request->est_majeur, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($request->filled('statut_insertion')) {
+            $query->where('statut_insertion', $request->statut_insertion);
+        }
+
+        return response()->json($query->orderBy('nom')->get());
     }
 
     public function show($id)
     {
         $talibe = Talibe::with(['daara', 'agent', 'insertions'])->findOrFail($id);
-        return response()->json($talibe);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $talibe = Talibe::findOrFail($id);
-        $talibe->update($request->all());
         return response()->json($talibe);
     }
 

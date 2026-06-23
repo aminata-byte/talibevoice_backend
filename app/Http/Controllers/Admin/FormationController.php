@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Formation;
+use App\Models\Insertion;
 use Illuminate\Http\Request;
 
 class FormationController extends Controller
@@ -12,11 +13,15 @@ class FormationController extends Controller
     {
         $query = Formation::with('partenaire');
 
-        if ($request->has('statut')) {
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 
-        return response()->json($query->get());
+        if ($request->filled('domaine')) {
+            $query->where('domaine', $request->domaine);
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     public function show($id)
@@ -54,12 +59,23 @@ class FormationController extends Controller
 
         $formation = Formation::findOrFail($id);
 
-        \App\Models\Insertion::create([
-            'talibe_id' => $request->talibe_id,
-            'partenaire_id' => $formation->partenaire_id,
-            'formation_id' => $formation->id,
-            'type' => 'formation',
-            'statut' => 'en_attente',
+        // Vérifier si le talibé est déjà inscrit dans cette formation
+        $dejaInscrit = Insertion::where('talibe_id', $request->talibe_id)
+            ->where('formation_id', $formation->id)
+            ->exists();
+
+        if ($dejaInscrit) {
+            return response()->json([
+                'message' => 'Ce talibé est déjà inscrit dans cette formation.'
+            ], 422);
+        }
+
+        Insertion::create([
+            'talibe_id'      => $request->talibe_id,
+            'partenaire_id'  => $formation->partenaire_id,
+            'formation_id'   => $formation->id,
+            'type'           => 'formation',
+            'statut'         => 'en_attente',
             'date_insertion' => now(),
         ]);
 

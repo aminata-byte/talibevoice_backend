@@ -95,4 +95,48 @@ class RecensementController extends Controller
         $daaras = Daara::all();
         return response()->json($daaras);
     }
+
+    public function updateTalibe(Request $request, $id)
+    {
+        $talibe = Talibe::where('agent_id', $request->user()->id)
+            ->orWhereNull('agent_id')
+            ->findOrFail($id);
+
+        $talibe->update($request->only([
+            'nom',
+            'prenom',
+            'date_naissance',
+            'lieu_naissance',
+            'niveau_etude',
+            'est_majeur',
+            'a_etat_civil',
+        ]));
+
+        return response()->json($talibe);
+    }
+
+    public function uploadDocument(Request $request, $id)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $talibe = Talibe::where('agent_id', $request->user()->id)
+            ->orWhereNull('agent_id')
+            ->findOrFail($id);
+
+        if ($talibe->document_path) {
+            \Storage::disk('public')->delete($talibe->document_path);
+        }
+
+        $path = $request->file('document')->store('talibes_documents', 'public');
+
+        $talibe->update(['document_path' => $path]);
+
+        return response()->json([
+            'message' => 'Document ajouté avec succès.',
+            'document_url' => \Storage::url($path),
+            'talibe' => $talibe,
+        ]);
+    }
 }

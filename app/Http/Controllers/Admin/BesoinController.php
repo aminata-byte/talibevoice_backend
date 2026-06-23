@@ -12,15 +12,15 @@ class BesoinController extends Controller
     {
         $query = Besoin::with(['daara', 'agent']);
 
-        if ($request->has('priorite')) {
+        if ($request->filled('priorite')) {
             $query->where('priorite', $request->priorite);
         }
 
-        if ($request->has('statut')) {
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 
-        return response()->json($query->orderBy('priorite')->get());
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     public function show($id)
@@ -29,17 +29,19 @@ class BesoinController extends Controller
         return response()->json($besoin);
     }
 
-    public function update(Request $request, $id)
-    {
-        $besoin = Besoin::findOrFail($id);
-        $besoin->update($request->all());
-        return response()->json($besoin);
-    }
+
 
     public function destroy($id)
     {
         $besoin = Besoin::findOrFail($id);
         $besoin->delete();
         return response()->json(['message' => 'Besoin supprimé avec succès.']);
+    }
+
+    public function resoudre($id)
+    {
+        $besoin = Besoin::findOrFail($id);
+        $besoin->update(['statut' => 'resolu']);
+        return response()->json(['message' => 'Besoin marqué comme résolu.']);
     }
 }

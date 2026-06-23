@@ -12,11 +12,12 @@ use App\Http\Controllers\Admin\InsertionController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\RapportController;
 use App\Http\Controllers\Admin\UtilisateurController;
+use App\Http\Controllers\Admin\PartenaireController;
 use App\Http\Controllers\Agent\RecensementController;
 use App\Http\Controllers\Agent\MissionController;
 use App\Http\Controllers\Public\DaaraPublicController;
 use App\Http\Controllers\Public\DonPublicController;
-use App\Http\Controllers\Public\PartenaireController;
+use App\Http\Controllers\Public\PartenaireController as PartenairePublicController;
 
 // ============================================
 // ROUTES PUBLIQUES
@@ -36,19 +37,19 @@ Route::post('/dons', [DonPublicController::class, 'store']);
 Route::get('/dons/stats', [DonPublicController::class, 'stats']);
 
 // Partenaires publics
-Route::post('/partenaires/candidature', [PartenaireController::class, 'candidature']);
-Route::post('/partenaires/login', [PartenaireController::class, 'login']);
+Route::post('/partenaires/candidature', [PartenairePublicController::class, 'candidature']);
+Route::post('/partenaires/login', [PartenairePublicController::class, 'login']);
 
 // ============================================
 // ROUTES PARTENAIRE (token partenaire)
 // ============================================
 Route::prefix('partenaires')->group(function () {
-  Route::get('/profil', [PartenaireController::class, 'profil']);
-  Route::put('/profil', [PartenaireController::class, 'updateProfil']);
-  Route::get('/offres', [PartenaireController::class, 'offres']);
-  Route::post('/offres', [PartenaireController::class, 'submitOffre']);
-  Route::get('/talibes-inscrits', [PartenaireController::class, 'talibesInscrits']);
-  Route::get('/impact', [PartenaireController::class, 'impact']);
+  Route::get('/profil', [PartenairePublicController::class, 'profil']);
+  Route::put('/profil', [PartenairePublicController::class, 'updateProfil']);
+  Route::get('/offres', [PartenairePublicController::class, 'offres']);
+  Route::post('/offres', [PartenairePublicController::class, 'submitOffre']);
+  Route::get('/talibes-inscrits', [PartenairePublicController::class, 'talibesInscrits']);
+  Route::get('/impact', [PartenairePublicController::class, 'impact']);
 });
 
 // ============================================
@@ -67,9 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Daaras
     Route::get('/daaras', [DaaraController::class, 'index']);
-    Route::post('/daaras', [DaaraController::class, 'store']);
     Route::get('/daaras/{id}', [DaaraController::class, 'show']);
-    Route::put('/daaras/{id}', [DaaraController::class, 'update']);
     Route::delete('/daaras/{id}', [DaaraController::class, 'destroy']);
     Route::post('/daaras/{id}/activer', [DaaraController::class, 'activer']);
     Route::post('/daaras/{id}/desactiver', [DaaraController::class, 'desactiver']);
@@ -78,14 +77,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Talibés
     Route::get('/talibes', [TalibeController::class, 'index']);
     Route::get('/talibes/{id}', [TalibeController::class, 'show']);
-    Route::put('/talibes/{id}', [TalibeController::class, 'update']);
     Route::delete('/talibes/{id}', [TalibeController::class, 'destroy']);
 
     // Besoins
     Route::get('/besoins', [BesoinController::class, 'index']);
     Route::get('/besoins/{id}', [BesoinController::class, 'show']);
-    Route::put('/besoins/{id}', [BesoinController::class, 'update']);
     Route::delete('/besoins/{id}', [BesoinController::class, 'destroy']);
+    Route::post('/besoins/{id}/resoudre', [BesoinController::class, 'resoudre']);
 
     // Dons
     Route::get('/dons', [DonController::class, 'index']);
@@ -98,6 +96,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/redistributions', [RedistributionController::class, 'index']);
     Route::post('/redistributions', [RedistributionController::class, 'store']);
     Route::post('/redistributions/{id}/valider', [RedistributionController::class, 'valider']);
+
+    // Partenaires
+    Route::get('/partenaires', [PartenaireController::class, 'index']);
+    Route::get('/partenaires/{id}', [PartenaireController::class, 'show']);
+    Route::post('/partenaires/{id}/valider', [PartenaireController::class, 'valider']);
+    Route::post('/partenaires/{id}/rejeter', [PartenaireController::class, 'rejeter']);
+    Route::delete('/partenaires/{id}', [PartenaireController::class, 'destroy']);
 
     // Formations
     Route::get('/formations', [FormationController::class, 'index']);
@@ -142,7 +147,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/daaras', [RecensementController::class, 'storeDaara']);
     Route::post('/besoins', [RecensementController::class, 'storeBesoin']);
     Route::get('/talibes', [RecensementController::class, 'getTalibes']);
+    Route::put('/talibes/{id}', [RecensementController::class, 'updateTalibe']);
     Route::get('/daaras', [RecensementController::class, 'getDaaras']);
+    Route::post('/talibes/{id}/document', [RecensementController::class, 'uploadDocument']);
 
     // Missions
     Route::get('/missions', [MissionController::class, 'index']);

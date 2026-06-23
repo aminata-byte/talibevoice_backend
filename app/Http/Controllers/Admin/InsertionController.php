@@ -12,11 +12,15 @@ class InsertionController extends Controller
     {
         $query = Insertion::with(['talibe', 'partenaire', 'formation']);
 
-        if ($request->has('statut')) {
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 
-        return response()->json($query->get());
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
     public function show($id)

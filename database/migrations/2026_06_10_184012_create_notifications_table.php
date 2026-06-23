@@ -20,7 +20,7 @@ return new class extends Migration
                 'offre_validee'
             ]);
             $table->enum('destinataire_type', ['agent', 'partenaire']);
-            $table->unsignedBigInteger('destinataire_id');
+            $table->unsignedBigInteger('destinataire_id')->nullable();
             $table->boolean('est_lue')->default(false);
             $table->date('date_envoi');
             $table->timestamps();
