@@ -12,7 +12,7 @@ class RapportController extends Controller
     {
         $query = Rapport::with(['agent', 'daara']);
 
-        if ($request->has('statut')) {
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\Public\DaaraPublicController;
 use App\Http\Controllers\Public\DonPublicController;
 use App\Http\Controllers\Public\PartenaireController as PartenairePublicController;
 
+
 // ============================================
 // ROUTES PUBLIQUES
 // ============================================
@@ -60,6 +61,8 @@ Route::middleware('auth:sanctum')->group(function () {
   // Auth
   Route::post('/auth/logout', [AuthController::class, 'logout']);
   Route::get('/auth/me', [AuthController::class, 'me']);
+  Route::put('/auth/me', [AuthController::class, 'updateMe']);
+  Route::put('/auth/password', [AuthController::class, 'changePassword']);
 
   // ============================================
   // ROUTES ADMIN

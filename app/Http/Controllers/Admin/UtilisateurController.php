@@ -48,8 +48,17 @@ class UtilisateurController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
+
+        $request->validate([
+            'name'             => 'sometimes|required|string|max:100',
+            'email'            => 'sometimes|required|email|unique:users,email,' . $id,
+            'telephone'        => 'sometimes|nullable|string',
+            'zone_affectation' => 'sometimes|nullable|string',
+            'role'             => 'sometimes|required|in:admin,agent',
+        ]);
+
         $user->update($request->only(['name', 'email', 'telephone', 'zone_affectation', 'role']));
-        return response()->json($user);
+        return response()->json(['message' => 'Utilisateur mis à jour.', 'user' => $user]);
     }
 
     public function destroy($id)
