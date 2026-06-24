@@ -48,8 +48,9 @@ class DaaraPublicController extends Controller
     {
         return response()->json([
             'total_talibes' => \App\Models\Talibe::count(),
-            'total_daaras' => Daara::where('statut', 'actif')->count(),
-            'total_dons' => \App\Models\Don::where('statut', 'valide')->sum('montant'),
+            'total_daaras'  => Daara::where('statut', 'actif')->count(),
+            'total_dons'    => \App\Models\Don::where('statut', 'valide')->sum('montant'),
+            'total_agents'  => \App\Models\User::where('role', 'agent')->where('statut', 'actif')->count(),
         ]);
     }
 }
