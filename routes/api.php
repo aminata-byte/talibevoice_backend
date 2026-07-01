@@ -18,6 +18,9 @@ use App\Http\Controllers\Agent\MissionController;
 use App\Http\Controllers\Public\DaaraPublicController;
 use App\Http\Controllers\Public\DonPublicController;
 use App\Http\Controllers\Public\PartenaireController as PartenairePublicController;
+use App\Http\Controllers\Admin\ObjectifController as AdminObjectifController;
+use App\Http\Controllers\Agent\ObjectifController as AgentObjectifController;
+
 
 
 // ============================================
@@ -76,6 +79,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/daaras/{id}/activer', [DaaraController::class, 'activer']);
     Route::post('/daaras/{id}/desactiver', [DaaraController::class, 'desactiver']);
     Route::post('/daaras/{id}/valider', [DaaraController::class, 'valider']);
+
+    //objectifs
+    Route::get('/objectifs', [AdminObjectifController::class, 'index']);
+    Route::post('/objectifs', [AdminObjectifController::class, 'store']);
+    Route::put('/objectifs/{id}', [AdminObjectifController::class, 'update']);
+    Route::delete('/objectifs/{id}', [AdminObjectifController::class, 'destroy']);
+    Route::get('/objectifs/agent/{agentId}', [AdminObjectifController::class, 'parAgent']);
 
     // Talibés
     Route::get('/talibes', [TalibeController::class, 'index']);
@@ -138,6 +148,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/utilisateurs/{id}', [UtilisateurController::class, 'destroy']);
     Route::post('/utilisateurs/{id}/bloquer', [UtilisateurController::class, 'bloquer']);
     Route::post('/utilisateurs/{id}/debloquer', [UtilisateurController::class, 'debloquer']);
+
+    // Missions
+    Route::get('/missions', [\App\Http\Controllers\Admin\MissionController::class, 'index']);
+    Route::get('/missions/{id}', [\App\Http\Controllers\Admin\MissionController::class, 'show']);
+    Route::post('/missions', [\App\Http\Controllers\Admin\MissionController::class, 'store']);
+    Route::post('/missions/{id}/assigner', [\App\Http\Controllers\Admin\MissionController::class, 'assignerAgent']);
   });
 
   // ============================================
@@ -153,18 +169,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/talibes/{id}', [RecensementController::class, 'updateTalibe']);
     Route::get('/daaras', [RecensementController::class, 'getDaaras']);
     Route::post('/talibes/{id}/document', [RecensementController::class, 'uploadDocument']);
+    Route::get('/talibes/{id}', [RecensementController::class, 'showTalibe']);
 
     // Missions
     Route::get('/missions', [MissionController::class, 'index']);
     Route::get('/missions/{id}', [MissionController::class, 'show']);
     Route::post('/missions/{id}/accepter', [MissionController::class, 'accepter']);
     Route::post('/missions/{id}/cloturer', [MissionController::class, 'cloturer']);
+    
 
     // Rapports
     Route::post('/rapports', [MissionController::class, 'storeRapport']);
     Route::get('/rapports', [MissionController::class, 'getRapports']);
+    Route::put('/rapports/{id}', [MissionController::class, 'updateRapport']);
 
     // Notifications
     Route::get('/notifications', [MissionController::class, 'getNotifications']);
+    Route::post('/notifications/{id}/lue', [MissionController::class, 'marquerLue']);
+
+    //objectifs
+    Route::get('/objectifs', [AgentObjectifController::class, 'mesObjectifs']);
   });
 });

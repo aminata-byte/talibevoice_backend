@@ -115,6 +115,15 @@ class RecensementController extends Controller
         return response()->json($talibe);
     }
 
+    public function showTalibe(Request $request, $id)
+    {
+        $talibe = Talibe::where('agent_id', $request->user()->id)
+            ->with('daara')
+            ->findOrFail($id);
+
+        return response()->json($talibe);
+    }
+
     public function uploadDocument(Request $request, $id)
     {
         $request->validate([

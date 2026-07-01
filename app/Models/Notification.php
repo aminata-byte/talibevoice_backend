@@ -11,6 +11,7 @@ class Notification extends Model
 
     protected $fillable = [
         'admin_id',
+        'mission_id',
         'message',
         'type',
         'destinataire_type',
@@ -18,6 +19,11 @@ class Notification extends Model
         'est_lue',
         'date_envoi',
     ];
+
+    public function mission()
+    {
+        return $this->belongsTo(Mission::class);
+    }
 
     protected $casts = [
         'date_envoi' => 'date',
@@ -38,4 +44,6 @@ class Notification extends Model
         }
         return $this->belongsTo(Partenaire::class, 'destinataire_id');
     }
+
+
 }

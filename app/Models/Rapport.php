@@ -11,6 +11,7 @@ class Rapport extends Model
 
     protected $fillable = [
         'agent_id',
+        'mission_id',
         'daara_id',
         'titre',
         'type',
@@ -18,6 +19,11 @@ class Rapport extends Model
         'statut',
         'date_creation',
     ];
+
+    public function mission()
+    {
+        return $this->belongsTo(Mission::class);
+    }
 
     protected $casts = [
         'date_creation' => 'date',

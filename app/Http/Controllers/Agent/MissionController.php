@@ -40,19 +40,22 @@ class MissionController extends Controller
     public function storeRapport(Request $request)
     {
         $request->validate([
-            'titre' => 'required|string',
-            'contenu' => 'required|string',
-            'type' => 'required|string',
+            'titre'      => 'required|string',
+            'contenu'    => 'required|string',
+            'type'       => 'required|string',
+            'mission_id' => 'nullable|exists:missions,id',
+            'daara_id'   => 'nullable|exists:daaras,id',
         ]);
 
         $rapport = Rapport::create([
-            'agent_id' => $request->user()->id,
-            'daara_id' => $request->daara_id,
-            'titre' => $request->titre,
-            'type' => $request->type,
-            'contenu' => $request->contenu,
-            'statut' => $request->statut ?? 'brouillon',
-            'date_creation' => now(),
+            'agent_id'       => $request->user()->id,
+            'mission_id'     => $request->mission_id,
+            'daara_id'       => $request->daara_id,
+            'titre'          => $request->titre,
+            'type'           => $request->type,
+            'contenu'        => $request->contenu,
+            'statut'         => $request->statut ?? 'brouillon',
+            'date_creation'  => now(),
         ]);
 
         return response()->json($rapport, 201);
@@ -74,5 +77,29 @@ class MissionController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         return response()->json($notifications);
+    }
+
+    public function marquerLue($id)
+    {
+        $notif = \App\Models\Notification::findOrFail($id);
+        $notif->update(['est_lue' => true]);
+        return response()->json(['message' => 'Notification marquée comme lue.']);
+    }
+
+    public function updateRapport(Request $request, $id)
+    {
+        $rapport = Rapport::findOrFail($id);
+
+        $request->validate([
+            'titre'   => 'sometimes|required|string',
+            'contenu' => 'sometimes|required|string',
+            'type'    => 'sometimes|required|string',
+            'daara_id' => 'nullable|exists:daaras,id',
+            'statut'  => 'sometimes|in:brouillon,soumis',
+        ]);
+
+        $rapport->update($request->only(['titre', 'contenu', 'type', 'daara_id', 'statut']));
+
+        return response()->json($rapport, 200);
     }
 }
