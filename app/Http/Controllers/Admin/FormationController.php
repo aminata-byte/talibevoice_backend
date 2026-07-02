@@ -11,7 +11,8 @@ class FormationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Formation::with('partenaire');
+        $query = Formation::with('partenaire')
+            ->withCount('insertions as nb_inscrits');
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
