@@ -28,7 +28,11 @@ use App\Http\Controllers\Agent\ObjectifController as AgentObjectifController;
 // ============================================
 
 // Auth
+// Auth
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 // Daaras publiques
 Route::get('/daaras', [DaaraPublicController::class, 'index']);
