@@ -4,38 +4,51 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Partenaire;
-use App\Models\Formation;
-use App\Models\Insertion;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class PartenaireController extends Controller
+class PartenairePublicController extends Controller
 {
     public function candidature(Request $request)
     {
         $request->validate([
-            'nom' => 'required|string',
-            'domaine' => 'required|string',
-            'nom_contact' => 'required|string',
-            'email' => 'required|email|unique:partenaires,email',
-            'telephone' => 'nullable|string',
+            'nom'                => 'required|string',
+            'domaine'            => 'required|string',
+            'nom_contact'        => 'required|string',
+            'email'              => 'required|email',
+            'telephone'          => 'nullable|string',
             'message_motivation' => 'nullable|string',
         ]);
 
         $partenaire = Partenaire::create([
-            'nom' => $request->nom,
-            'domaine' => $request->domaine,
-            'nom_contact' => $request->nom_contact,
-            'email' => $request->email,
-            'telephone' => $request->telephone,
+            'nom'                => $request->nom,
+            'domaine'            => $request->domaine,
+            'nom_contact'        => $request->nom_contact,
+            'email'              => $request->email,
+            'telephone'          => $request->telephone,
             'message_motivation' => $request->message_motivation,
-            'code_partenaire' => strtoupper(Str::random(8)),
-            'statut' => 'en_attente',
+            'statut'             => 'en_attente',
         ]);
 
+        // Notifier tous les admins
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'admin_id'          => $admin->id,
+                'message'           => "Nouvelle candidature partenaire : {$partenaire->nom} ({$partenaire->domaine})",
+                'type'              => 'offre_validee',
+                'destinataire_type' => 'agent',
+                'destinataire_id'   => $admin->id,
+                'est_lue'           => false,
+                'date_envoi'        => now(),
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Candidature soumise avec succès. Vous recevrez votre code partenaire sous 48h.',
-            'partenaire' => $partenaire,
+            'message' => 'Candidature soumise avec succès. Nous vous contacterons sous 48h.',
         ], 201);
     }
 
@@ -50,86 +63,132 @@ class PartenaireController extends Controller
             ->first();
 
         if (!$partenaire) {
-            return response()->json(['message' => 'Code partenaire invalide ou compte non validé.'], 401);
+            return response()->json([
+                'message' => 'Code partenaire invalide ou compte non validé.',
+            ], 401);
         }
 
+        $token = Str::random(60);
+        $partenaire->update(['token' => Hash::make($token)]);
+
         return response()->json([
-            'token' => 'partenaire_' . $partenaire->code_partenaire,
+            'token'      => $token,
             'partenaire' => $partenaire,
         ]);
     }
 
     public function profil(Request $request)
     {
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
+
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
         return response()->json($partenaire);
     }
 
     public function updateProfil(Request $request)
     {
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
 
-        $partenaire->update($request->only([
-            'nom',
-            'domaine',
-            'nom_contact',
-            'telephone',
-            'site_web'
-        ]));
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
+        $request->validate([
+            'nom'       => 'sometimes|required|string',
+            'telephone' => 'sometimes|nullable|string',
+            'site_web'  => 'sometimes|nullable|string',
+        ]);
+
+        $partenaire->update($request->only(['nom', 'telephone', 'site_web']));
 
         return response()->json([
-            'message' => 'Profil mis à jour avec succès.',
+            'message'    => 'Profil mis à jour.',
             'partenaire' => $partenaire,
         ]);
     }
 
     public function offres(Request $request)
     {
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
 
-        $offres = Formation::where('partenaire_id', $partenaire->id)->get();
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
+        $offres = $partenaire->formations()->orderBy('created_at', 'desc')->get();
         return response()->json($offres);
     }
 
     public function submitOffre(Request $request)
     {
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
+
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
         $request->validate([
-            'type' => 'required|in:formation,stage,emploi',
-            'titre' => 'required|string',
+            'titre'      => 'required|string',
+            'domaine'    => 'required|string',
+            'capacite'   => 'required|integer|min:1',
+            'date_debut' => 'required|date',
+            'date_fin'   => 'required|date|after:date_debut',
+            'lieu'       => 'nullable|string',
+            'description' => 'nullable|string',
+            'prerequis'  => 'nullable|string',
         ]);
 
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
-
-        $formation = Formation::create([
-            'partenaire_id' => $partenaire->id,
-            'titre' => $request->titre,
-            'domaine' => $request->domaine ?? '',
+        $formation = $partenaire->formations()->create([
+            'titre'       => $request->titre,
+            'domaine'     => $request->domaine,
+            'capacite'    => $request->capacite,
+            'date_debut'  => $request->date_debut,
+            'date_fin'    => $request->date_fin,
+            'lieu'        => $request->lieu,
             'description' => $request->description,
-            'date_debut' => $request->date_debut,
-            'date_fin' => $request->date_fin,
-            'capacite' => $request->places ?? 0,
-            'lieu' => $request->lieu,
-            'prerequis' => $request->prerequis,
-            'statut' => 'en_attente',
+            'prerequis'   => $request->prerequis,
+            'statut'      => 'en_attente',
         ]);
+
+        // Notifier tous les admins
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'admin_id'          => $admin->id,
+                'message'           => "Nouvelle offre de formation soumise par {$partenaire->nom} : {$formation->titre}",
+                'type'              => 'offre_validee',
+                'destinataire_type' => 'agent',
+                'destinataire_id'   => $admin->id,
+                'est_lue'           => false,
+                'date_envoi'        => now(),
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Offre soumise avec succès. Elle sera validée par l\'administrateur.',
-            'offre' => $formation,
+            'message'   => 'Offre soumise avec succès. En attente de validation.',
+            'formation' => $formation,
         ], 201);
     }
 
     public function talibesInscrits(Request $request)
     {
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
 
-        $insertions = Insertion::where('partenaire_id', $partenaire->id)
-            ->with('talibe')
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
+        $insertions = $partenaire->insertions()
+            ->with(['talibe', 'formation'])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($insertions);
@@ -137,13 +196,36 @@ class PartenaireController extends Controller
 
     public function impact(Request $request)
     {
-        $code = str_replace('partenaire_', '', $request->bearerToken());
-        $partenaire = Partenaire::where('code_partenaire', $code)->firstOrFail();
+        $token = $request->bearerToken();
+        $partenaire = $this->getPartenaireFromToken($token);
+
+        if (!$partenaire) {
+            return response()->json(['message' => 'Non autorisé.'], 401);
+        }
+
+        $insertions = $partenaire->insertions;
+        $formations = $partenaire->formations;
 
         return response()->json([
-            'offres_soumises' => Formation::where('partenaire_id', $partenaire->id)->count(),
-            'talibes_inscrits' => Insertion::where('partenaire_id', $partenaire->id)->count(),
-            'offres_validees' => Formation::where('partenaire_id', $partenaire->id)->where('statut', 'valide')->count(),
+            'total_formes'    => $insertions->count(),
+            'total_inseres'   => $insertions->where('statut', 'valide')->count(),
+            'total_emplois'   => $insertions->where('type', 'emploi')->count(),
+            'total_stages'    => $insertions->where('type', 'stage')->count(),
+            'total_formations' => $formations->count(),
+            'formations'      => $formations,
         ]);
+    }
+
+    private function getPartenaireFromToken($token)
+    {
+        if (!$token) return null;
+
+        $partenaires = Partenaire::whereNotNull('token')->get();
+        foreach ($partenaires as $p) {
+            if (Hash::check($token, $p->token)) {
+                return $p;
+            }
+        }
+        return null;
     }
 }
