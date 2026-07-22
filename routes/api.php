@@ -2,32 +2,32 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Public\DaaraPublicController;
+use App\Http\Controllers\Public\DonPublicController;
+use App\Http\Controllers\Public\PartenairePublicController;
+use App\Http\Controllers\Public\ContactPublicController;
 use App\Http\Controllers\Admin\DaaraController;
 use App\Http\Controllers\Admin\TalibeController;
 use App\Http\Controllers\Admin\BesoinController;
 use App\Http\Controllers\Admin\DonController;
-use App\Http\Controllers\Admin\RedistributionController;
 use App\Http\Controllers\Admin\FormationController;
 use App\Http\Controllers\Admin\InsertionController;
 use App\Http\Controllers\Admin\NotificationController;
-use App\Http\Controllers\Admin\RapportController;
-use App\Http\Controllers\Admin\UtilisateurController;
 use App\Http\Controllers\Admin\PartenaireController;
-use App\Http\Controllers\Agent\RecensementController;
-use App\Http\Controllers\Agent\MissionController;
-use App\Http\Controllers\Public\DaaraPublicController;
-use App\Http\Controllers\Public\DonPublicController;
-use App\Http\Controllers\Public\PartenaireController as PartenairePublicController;
+use App\Http\Controllers\Admin\RapportController;
+use App\Http\Controllers\Admin\RedistributionController;
+use App\Http\Controllers\Admin\ContactController as AdminContactController;
+use App\Http\Controllers\Admin\UtilisateurController;
+use App\Http\Controllers\Admin\MissionController as AdminMissionController;
 use App\Http\Controllers\Admin\ObjectifController as AdminObjectifController;
+use App\Http\Controllers\Agent\MissionController as AgentMissionController;
+use App\Http\Controllers\Agent\RecensementController;
 use App\Http\Controllers\Agent\ObjectifController as AgentObjectifController;
-
-
 
 // ============================================
 // ROUTES PUBLIQUES
 // ============================================
 
-// Auth
 // Auth
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -43,10 +43,20 @@ Route::get('/stats', [DaaraPublicController::class, 'stats']);
 // Dons publics
 Route::post('/dons', [DonPublicController::class, 'store']);
 Route::get('/dons/stats', [DonPublicController::class, 'stats']);
+Route::get('/dons/statut/{reference}', [DonPublicController::class, 'statut']);
+
+// Webhooks / notifications de paiement (Wave, Orange Money)
+Route::post('/paiements/wave/webhook', [DonPublicController::class, 'waveWebhook']);
+Route::post('/paiements/orange/notification', [DonPublicController::class, 'orangeNotification'])
+    ->name('paiement.orange.notification');
 
 // Partenaires publics
 Route::post('/partenaires/candidature', [PartenairePublicController::class, 'candidature']);
 Route::post('/partenaires/login', [PartenairePublicController::class, 'login']);
+Route::post('/partenaires/recuperer-code', [PartenairePublicController::class, 'recupererCode']);
+
+// Contact
+Route::post('/contact', [ContactPublicController::class, 'store']);
 
 // ============================================
 // ROUTES PARTENAIRE (token partenaire)
@@ -74,22 +84,15 @@ Route::middleware('auth:sanctum')->group(function () {
   // ============================================
   // ROUTES ADMIN
   // ============================================
-  Route::middleware('admin')->prefix('admin')->group(function () {
+  Route::prefix('admin')->group(function () {
 
     // Daaras
     Route::get('/daaras', [DaaraController::class, 'index']);
+    Route::post('/daaras', [DaaraController::class, 'store']);
     Route::get('/daaras/{id}', [DaaraController::class, 'show']);
+    Route::put('/daaras/{id}', [DaaraController::class, 'update']);
     Route::delete('/daaras/{id}', [DaaraController::class, 'destroy']);
-    Route::post('/daaras/{id}/activer', [DaaraController::class, 'activer']);
-    Route::post('/daaras/{id}/desactiver', [DaaraController::class, 'desactiver']);
     Route::post('/daaras/{id}/valider', [DaaraController::class, 'valider']);
-
-    //objectifs
-    Route::get('/objectifs', [AdminObjectifController::class, 'index']);
-    Route::post('/objectifs', [AdminObjectifController::class, 'store']);
-    Route::put('/objectifs/{id}', [AdminObjectifController::class, 'update']);
-    Route::delete('/objectifs/{id}', [AdminObjectifController::class, 'destroy']);
-    Route::get('/objectifs/agent/{agentId}', [AdminObjectifController::class, 'parAgent']);
 
     // Talibés
     Route::get('/talibes', [TalibeController::class, 'index']);
@@ -99,27 +102,24 @@ Route::middleware('auth:sanctum')->group(function () {
     // Besoins
     Route::get('/besoins', [BesoinController::class, 'index']);
     Route::get('/besoins/{id}', [BesoinController::class, 'show']);
-    Route::delete('/besoins/{id}', [BesoinController::class, 'destroy']);
     Route::post('/besoins/{id}/resoudre', [BesoinController::class, 'resoudre']);
+    Route::delete('/besoins/{id}', [BesoinController::class, 'destroy']);
 
     // Dons
     Route::get('/dons', [DonController::class, 'index']);
     Route::get('/dons/{id}', [DonController::class, 'show']);
     Route::post('/dons/{id}/valider', [DonController::class, 'valider']);
     Route::post('/dons/{id}/rejeter', [DonController::class, 'rejeter']);
-    Route::get('/dons/stats', [DonController::class, 'stats']);
 
     // Redistributions
     Route::get('/redistributions', [RedistributionController::class, 'index']);
     Route::post('/redistributions', [RedistributionController::class, 'store']);
     Route::post('/redistributions/{id}/valider', [RedistributionController::class, 'valider']);
 
-    // Partenaires
-    Route::get('/partenaires', [PartenaireController::class, 'index']);
-    Route::get('/partenaires/{id}', [PartenaireController::class, 'show']);
-    Route::post('/partenaires/{id}/valider', [PartenaireController::class, 'valider']);
-    Route::post('/partenaires/{id}/rejeter', [PartenaireController::class, 'rejeter']);
-    Route::delete('/partenaires/{id}', [PartenaireController::class, 'destroy']);
+    // Messages de contact
+    Route::get('/contacts', [AdminContactController::class, 'index']);
+    Route::post('/contacts/{id}/lu', [AdminContactController::class, 'marquerLu']);
+    Route::delete('/contacts/{id}', [AdminContactController::class, 'destroy']);
 
     // Formations
     Route::get('/formations', [FormationController::class, 'index']);
@@ -127,7 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/formations/{id}/valider', [FormationController::class, 'valider']);
     Route::post('/formations/{id}/activer', [FormationController::class, 'activer']);
     Route::post('/formations/{id}/desactiver', [FormationController::class, 'desactiver']);
-    Route::post('/formations/{id}/inscrire-talibe', [FormationController::class, 'inscrireTalibe']);
+    Route::post('/formations/{id}/inscrire', [FormationController::class, 'inscrireTalibe']);
     Route::delete('/formations/{id}', [FormationController::class, 'destroy']);
 
     // Insertions
@@ -139,6 +139,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications', [NotificationController::class, 'store']);
+
+    // Partenaires
+    Route::get('/partenaires', [PartenaireController::class, 'index']);
+    Route::get('/partenaires/{id}', [PartenaireController::class, 'show']);
+    Route::post('/partenaires/{id}/valider', [PartenaireController::class, 'valider']);
+    Route::post('/partenaires/{id}/rejeter', [PartenaireController::class, 'rejeter']);
+    Route::delete('/partenaires/{id}', [PartenaireController::class, 'destroy']);
 
     // Rapports
     Route::get('/rapports', [RapportController::class, 'index']);
@@ -154,44 +161,54 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/utilisateurs/{id}/debloquer', [UtilisateurController::class, 'debloquer']);
 
     // Missions
-    Route::get('/missions', [\App\Http\Controllers\Admin\MissionController::class, 'index']);
-    Route::get('/missions/{id}', [\App\Http\Controllers\Admin\MissionController::class, 'show']);
-    Route::post('/missions', [\App\Http\Controllers\Admin\MissionController::class, 'store']);
-    Route::post('/missions/{id}/assigner', [\App\Http\Controllers\Admin\MissionController::class, 'assignerAgent']);
+    Route::get('/missions', [AdminMissionController::class, 'index']);
+    Route::get('/missions/{id}', [AdminMissionController::class, 'show']);
+    Route::post('/missions', [AdminMissionController::class, 'store']);
+    Route::post('/missions/{id}/assigner', [AdminMissionController::class, 'assignerAgent']);
+
+    // Objectifs
+    Route::get('/objectifs', [AdminObjectifController::class, 'index']);
+    Route::post('/objectifs', [AdminObjectifController::class, 'store']);
+    Route::put('/objectifs/{id}', [AdminObjectifController::class, 'update']);
+    Route::delete('/objectifs/{id}', [AdminObjectifController::class, 'destroy']);
+    Route::get('/objectifs/agent/{agentId}', [AdminObjectifController::class, 'parAgent']);
   });
 
   // ============================================
   // ROUTES AGENT
   // ============================================
-  Route::middleware('agent')->prefix('agent')->group(function () {
+  Route::prefix('agent')->group(function () {
 
-    // Recensement
-    Route::post('/talibes', [RecensementController::class, 'storeTalibe']);
-    Route::post('/daaras', [RecensementController::class, 'storeDaara']);
-    Route::post('/besoins', [RecensementController::class, 'storeBesoin']);
+    // Talibés
     Route::get('/talibes', [RecensementController::class, 'getTalibes']);
-    Route::put('/talibes/{id}', [RecensementController::class, 'updateTalibe']);
-    Route::get('/daaras', [RecensementController::class, 'getDaaras']);
-    Route::post('/talibes/{id}/document', [RecensementController::class, 'uploadDocument']);
+    Route::post('/talibes', [RecensementController::class, 'storeTalibe']);
     Route::get('/talibes/{id}', [RecensementController::class, 'showTalibe']);
+    Route::put('/talibes/{id}', [RecensementController::class, 'updateTalibe']);
+    Route::post('/talibes/{id}/document', [RecensementController::class, 'uploadDocument']);
+
+    // Daaras
+    Route::get('/daaras', [RecensementController::class, 'getDaaras']);
+    Route::post('/daaras', [RecensementController::class, 'storeDaara']);
+
+    // Besoins
+    Route::post('/besoins', [RecensementController::class, 'storeBesoin']);
 
     // Missions
-    Route::get('/missions', [MissionController::class, 'index']);
-    Route::get('/missions/{id}', [MissionController::class, 'show']);
-    Route::post('/missions/{id}/accepter', [MissionController::class, 'accepter']);
-    Route::post('/missions/{id}/cloturer', [MissionController::class, 'cloturer']);
-    
+    Route::get('/missions', [AgentMissionController::class, 'index']);
+    Route::get('/missions/{id}', [AgentMissionController::class, 'show']);
+    Route::post('/missions/{id}/accepter', [AgentMissionController::class, 'accepter']);
+    Route::post('/missions/{id}/cloturer', [AgentMissionController::class, 'cloturer']);
 
     // Rapports
-    Route::post('/rapports', [MissionController::class, 'storeRapport']);
-    Route::get('/rapports', [MissionController::class, 'getRapports']);
-    Route::put('/rapports/{id}', [MissionController::class, 'updateRapport']);
+    Route::post('/rapports', [AgentMissionController::class, 'storeRapport']);
+    Route::get('/rapports', [AgentMissionController::class, 'getRapports']);
+    Route::put('/rapports/{id}', [AgentMissionController::class, 'updateRapport']);
 
     // Notifications
-    Route::get('/notifications', [MissionController::class, 'getNotifications']);
-    Route::post('/notifications/{id}/lue', [MissionController::class, 'marquerLue']);
+    Route::get('/notifications', [AgentMissionController::class, 'getNotifications']);
+    Route::post('/notifications/{id}/lue', [AgentMissionController::class, 'marquerLue']);
 
-    //objectifs
+    // Objectifs
     Route::get('/objectifs', [AgentObjectifController::class, 'mesObjectifs']);
   });
 });

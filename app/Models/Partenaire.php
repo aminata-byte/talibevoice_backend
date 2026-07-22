@@ -19,6 +19,7 @@ class Partenaire extends Model
         'code_partenaire',
         'message_motivation',
         'statut',
+        'token',
     ];
 
     // Relations

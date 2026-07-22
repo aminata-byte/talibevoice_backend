@@ -21,6 +21,7 @@ class Talibe extends Model
         'niveau_etude',
         'est_majeur',
         'statut_insertion',
+        'document_path',
     ];
 
     protected $casts = [

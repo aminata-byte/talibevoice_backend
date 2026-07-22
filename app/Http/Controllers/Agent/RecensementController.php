@@ -98,9 +98,10 @@ class RecensementController extends Controller
 
     public function updateTalibe(Request $request, $id)
     {
-        $talibe = Talibe::where('agent_id', $request->user()->id)
-            ->orWhereNull('agent_id')
-            ->findOrFail($id);
+        $talibe = Talibe::where(function ($query) use ($request) {
+            $query->where('agent_id', $request->user()->id)
+                ->orWhereNull('agent_id');
+        })->findOrFail($id);
 
         $talibe->update($request->only([
             'nom',
@@ -130,9 +131,10 @@ class RecensementController extends Controller
             'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $talibe = Talibe::where('agent_id', $request->user()->id)
-            ->orWhereNull('agent_id')
-            ->findOrFail($id);
+        $talibe = Talibe::where(function ($query) use ($request) {
+            $query->where('agent_id', $request->user()->id)
+                ->orWhereNull('agent_id');
+        })->findOrFail($id);
 
         if ($talibe->document_path) {
             \Storage::disk('public')->delete($talibe->document_path);
@@ -141,6 +143,7 @@ class RecensementController extends Controller
         $path = $request->file('document')->store('talibes_documents', 'public');
 
         $talibe->update(['document_path' => $path]);
+        $talibe->load('daara');
 
         return response()->json([
             'message' => 'Document ajouté avec succès.',

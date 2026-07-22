@@ -11,11 +11,14 @@ class Don extends Model
 
     protected $fillable = [
         'donateur_id',
+        'reference',
         'type',
         'montant',
         'mode_paiement',
+        'pay_token',
         'items_materiel',
         'statut',
+        'statut_paiement',
         'date_don',
     ];
 

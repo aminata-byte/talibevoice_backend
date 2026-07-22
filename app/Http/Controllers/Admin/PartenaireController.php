@@ -7,6 +7,7 @@ use App\Models\Partenaire;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+
 class PartenaireController extends Controller
 {
   public function index(Request $request)

@@ -33,7 +33,6 @@ class PartenairePublicController extends Controller
             'statut'             => 'en_attente',
         ]);
 
-        // Notifier tous les admins
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             Notification::create([
@@ -135,14 +134,14 @@ class PartenairePublicController extends Controller
         }
 
         $request->validate([
-            'titre'      => 'required|string',
-            'domaine'    => 'required|string',
-            'capacite'   => 'required|integer|min:1',
-            'date_debut' => 'required|date',
-            'date_fin'   => 'required|date|after:date_debut',
-            'lieu'       => 'nullable|string',
+            'titre'       => 'required|string',
+            'domaine'     => 'required|string',
+            'capacite'    => 'required|integer|min:1',
+            'date_debut'  => 'required|date',
+            'date_fin'    => 'required|date|after:date_debut',
+            'lieu'        => 'nullable|string',
             'description' => 'nullable|string',
-            'prerequis'  => 'nullable|string',
+            'prerequis'   => 'nullable|string',
         ]);
 
         $formation = $partenaire->formations()->create([
@@ -157,7 +156,6 @@ class PartenairePublicController extends Controller
             'statut'      => 'en_attente',
         ]);
 
-        // Notifier tous les admins
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             Notification::create([
@@ -207,12 +205,35 @@ class PartenairePublicController extends Controller
         $formations = $partenaire->formations;
 
         return response()->json([
-            'total_formes'    => $insertions->count(),
-            'total_inseres'   => $insertions->where('statut', 'valide')->count(),
-            'total_emplois'   => $insertions->where('type', 'emploi')->count(),
-            'total_stages'    => $insertions->where('type', 'stage')->count(),
+            'total_formes'     => $insertions->count(),
+            'total_inseres'    => $insertions->where('statut', 'valide')->count(),
+            'total_emplois'    => $insertions->where('type', 'emploi')->count(),
+            'total_stages'     => $insertions->where('type', 'stage')->count(),
             'total_formations' => $formations->count(),
-            'formations'      => $formations,
+            'formations'       => $formations,
+        ]);
+    }
+
+    public function recupererCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $partenaire = Partenaire::where('email', $request->email)
+            ->where('statut', 'valide')
+            ->first();
+
+        if (!$partenaire) {
+            return response()->json([
+                'message' => 'Aucun partenaire validé trouvé avec cet email.',
+            ], 404);
+        }
+
+        return response()->json([
+            'message'         => 'Code récupéré avec succès.',
+            'code_partenaire' => $partenaire->code_partenaire,
+            'nom'             => $partenaire->nom,
         ]);
     }
 
