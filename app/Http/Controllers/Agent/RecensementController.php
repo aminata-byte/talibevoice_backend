@@ -44,6 +44,7 @@ class RecensementController extends Controller
         ]);
 
         $daara = Daara::create([
+            'agent_id' => $request->user()->id,
             'nom' => $request->nom,
             'adresse' => $request->adresse,
             'capacite_accueil' => $request->capacite_accueil ?? 0,
