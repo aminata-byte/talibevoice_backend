@@ -9,6 +9,10 @@ class PartenaireSeeder extends Seeder
 {
     public function run(): void
     {
+        if (Partenaire::count() > 0) {
+            return;
+        }
+
         $partenaires = [
             [
                 'nom' => 'École Polytechnique de Dakar',

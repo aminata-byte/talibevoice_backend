@@ -11,6 +11,10 @@ class DaaraSeeder extends Seeder
 {
     public function run(): void
     {
+        if (Daara::count() > 0) {
+            return;
+        }
+
         $daaras = [
             [
                 'nom' => 'Daara Al Nour',
